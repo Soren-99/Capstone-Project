@@ -52,25 +52,24 @@ public class JwtUtil {
     }
 
     public String generateToken(String userName){
-        Map<String, Object> claims= new HashMap<>();
+        Map<String, Object> claims = new HashMap<>();
         return createToken(claims, userName);
     }
 
     private String createToken(Map<String, Object> claims, String userName){
-        String jwt = Jwts
+        return Jwts
                 .builder()
                 .setClaims(claims)
                 .setSubject(userName)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis()+1000*60*30))
+                .setExpiration(new Date(System.currentTimeMillis()+10000*60*30))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
 
-        return jwt;
     }
 
     private Key getSignKey(){
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
-        return Keys.hmacShaKeyFor(keyBytes);
+        byte[] keybytes = Decoders.BASE64.decode(secret);
+        return Keys.hmacShaKeyFor(keybytes);
     }
 
 }

@@ -9,6 +9,7 @@ import soren.rahimi.Capstone.Project.entities.User;
 import soren.rahimi.Capstone.Project.repository.UserRepository;
 
 import java.util.ArrayList;
+import java.util.Optional;
 
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
@@ -18,8 +19,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findFirstByEmail(username);
-        if (user == null) throw new UsernameNotFoundException("Username not found", null);
-        return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), new ArrayList<>());
+        Optional<User> optionalUser = userRepository.findFirstByEmail(username);
+        if (optionalUser.isEmpty()) throw new UsernameNotFoundException("Username not found", null);
+        return new org.springframework.security.core.userdetails.User(optionalUser.get().getEmail(), optionalUser.get().getPassword(), new ArrayList<>());
     }
 }

@@ -1,5 +1,6 @@
 package soren.rahimi.Capstone.Project.configuration;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,29 +19,19 @@ import soren.rahimi.Capstone.Project.filters.JwtRequestFilter;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+//@EnableMethodSecurity
+@RequiredArgsConstructor
 public class WebSecurityConfiguration {
-    @Autowired
-    private JwtRequestFilter authFilter;
 
-    /*@Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
-        return http.csrf().disable()
-                .authorizeHttpRequests()
-                .requestMatchers("/authenticate", "sign-up").permitAll()
-                .and()
-                .authorizeHttpRequests().requestMatchers("/api/**")
-                .authenticated().and()
-                .sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
-                .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
-    }*/
-
+    private final JwtRequestFilter authFilter;
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+    public BCryptPasswordEncoder bCryptPasswordEncoder() {
+            return new BCryptPasswordEncoder();
+    }
+
+        @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
 
         httpSecurity.formLogin(http -> http.disable());
         httpSecurity.csrf(http -> http.disable());
@@ -50,10 +41,12 @@ public class WebSecurityConfiguration {
         return httpSecurity.build();
     }
 
-    @Bean
+
+
+    /*@Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
+    }*/
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception{

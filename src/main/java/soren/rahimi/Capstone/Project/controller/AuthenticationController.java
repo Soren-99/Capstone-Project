@@ -2,8 +2,12 @@ package soren.rahimi.Capstone.Project.controller;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -15,46 +19,67 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import soren.rahimi.Capstone.Project.dto.AuthenticationRequest;
-import soren.rahimi.Capstone.Project.dto.AuthenticationResponse;
+//import soren.rahimi.Capstone.Project.dto.AuthenticationResponse;
+import soren.rahimi.Capstone.Project.dto.SignupDTO;
+import soren.rahimi.Capstone.Project.dto.UserDTO;
 import soren.rahimi.Capstone.Project.entities.User;
 import soren.rahimi.Capstone.Project.repository.UserRepository;
-import soren.rahimi.Capstone.Project.service.user.UserService;
+import soren.rahimi.Capstone.Project.service.user.AuthService;
 import soren.rahimi.Capstone.Project.utils.JwtUtil;
 
 import java.io.IOException;
+import java.util.Optional;
 
 @RestController
+@RequiredArgsConstructor
 public class AuthenticationController {
-    @Autowired
-    private UserService userService;
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthService authService;
 
-    @Autowired
-    private UserDetailsService userDetailsService;
+    private final AuthenticationManager authenticationManager;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserDetailsService userDetailsService;
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final UserRepository userRepository;
+
+    private final JwtUtil jwtUtil;
+
+    public static final String TOKEN_PREFIX = "Bearer";
+    public static final String HEADER_STRING = "Authorization";
 
     @PostMapping("/authenticate")
-    public AuthenticationResponse createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest, HttpServletResponse response) throws BadCredentialsException, DisabledException, UsernameNotFoundException, IOException, JSONException, ServletException {
+    public  void createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest, HttpServletResponse response) throws IOException, JSONException {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword()));
         }catch (BadCredentialsException e){
             throw new BadCredentialsException("Incorrect username or password");
-        }catch (DisabledException disabledException){
-            response.sendError(HttpServletResponse.SC_NOT_ACCEPTABLE, "User is not activated");
-            return null;
         }
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getUsername());
-        User user = userRepository.findFirstByEmail(authenticationRequest.getUsername());
 
-        final String jwt = jwtUtil.generateToken(authenticationRequest.getUsername());
-        return new AuthenticationResponse(jwt);
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getUsername());
+        Optional<User> optionalUser = userRepository.findFirstByEmail(userDetails.getUsername());
+        final String jwt = jwtUtil.generateToken(userDetails.getUsername());
+
+        if (optionalUser.isPresent()){
+            response.getWriter().write(new JSONObject()
+                    .put("userId", optionalUser.get().getId())
+                    .put("role", optionalUser.get().getUserRole())
+                    .toString()
+            );
+
+            response.addHeader(HEADER_STRING, TOKEN_PREFIX + jwt);
+        }
+    }
+
+    @PostMapping("/sign-up")
+    public ResponseEntity<?> signupUser(@RequestBody SignupDTO signupDTO){
+
+        if (authService.hasUserWithEmail(signupDTO.getEmail())){
+            return new ResponseEntity<>("User already exist", HttpStatus.NOT_ACCEPTABLE);
+        }
+
+        UserDTO userDTO = authService.createUser(signupDTO);
+        return new ResponseEntity<>(userDTO, HttpStatus.OK);
 
     }
+
 }
