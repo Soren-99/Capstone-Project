@@ -14,5 +14,4 @@ public class UserDTO {
     private UserRole userRole;
 
 
-
 }

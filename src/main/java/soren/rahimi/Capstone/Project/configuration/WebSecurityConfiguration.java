@@ -40,14 +40,6 @@ public class WebSecurityConfiguration {
         httpSecurity.authorizeHttpRequests(http -> http.requestMatchers("/**").permitAll());
         return httpSecurity.build();
     }
-
-
-
-    /*@Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }*/
-
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception{
         return config.getAuthenticationManager();

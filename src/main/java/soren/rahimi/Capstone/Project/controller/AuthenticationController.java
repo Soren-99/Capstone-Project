@@ -48,24 +48,27 @@ public class AuthenticationController {
     public static final String HEADER_STRING = "Authorization";
 
     @PostMapping("/authenticate")
-    public  void createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest, HttpServletResponse response) throws IOException, JSONException {
+    public void createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest, HttpServletResponse response) throws BadCredentialsException, DisabledException, UsernameNotFoundException, IOException, JSONException, ServletException {
         try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword()));
-        }catch (BadCredentialsException e){
-            throw new BadCredentialsException("Incorrect username or password");
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(),
+                    authenticationRequest.getPassword()));
+        } catch (BadCredentialsException e) {
+            throw new BadCredentialsException("Incorrect username or password.");
         }
 
         final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getUsername());
         Optional<User> optionalUser = userRepository.findFirstByEmail(userDetails.getUsername());
         final String jwt = jwtUtil.generateToken(userDetails.getUsername());
 
-        if (optionalUser.isPresent()){
+        if (optionalUser.isPresent()) {
             response.getWriter().write(new JSONObject()
                     .put("userId", optionalUser.get().getId())
                     .put("role", optionalUser.get().getUserRole())
                     .toString()
             );
-
+            response.addHeader("Access-Control-Expose-Headers", "Authorization");
+            response.addHeader("Access-Control-Allow-Headers", "Authorization, X-PINGOTHER, Origin, " +
+                    "X-Requested-With, Content-Type, Accept, X-Custom-header");
             response.addHeader(HEADER_STRING, TOKEN_PREFIX + jwt);
         }
     }
