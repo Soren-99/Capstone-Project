@@ -16,8 +16,10 @@ public class User {
     private String surname;
     private String email;
     private String password;
+    @Lob
+    private byte[] img;
     private UserRole userRole;
-    private String img;
+
 
 
 

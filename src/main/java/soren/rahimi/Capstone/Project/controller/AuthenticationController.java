@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import soren.rahimi.Capstone.Project.dto.AuthenticationRequest;
 //import soren.rahimi.Capstone.Project.dto.AuthenticationResponse;
+import soren.rahimi.Capstone.Project.dto.AuthenticationResponse;
 import soren.rahimi.Capstone.Project.dto.SignupDTO;
 import soren.rahimi.Capstone.Project.dto.UserDTO;
 import soren.rahimi.Capstone.Project.entities.User;
@@ -48,7 +49,7 @@ public class AuthenticationController {
     public static final String HEADER_STRING = "Authorization";
 
     @PostMapping("/authenticate")
-    public void createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest, HttpServletResponse response) throws BadCredentialsException, DisabledException, UsernameNotFoundException, IOException, JSONException, ServletException {
+    public AuthenticationResponse createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest, HttpServletResponse response) throws BadCredentialsException, DisabledException, UsernameNotFoundException, IOException, JSONException, ServletException {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(),
                     authenticationRequest.getPassword()));
@@ -59,19 +60,11 @@ public class AuthenticationController {
         final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getUsername());
         Optional<User> optionalUser = userRepository.findFirstByEmail(userDetails.getUsername());
         final String jwt = jwtUtil.generateToken(userDetails.getUsername());
-
-        if (optionalUser.isPresent()) {
-            response.getWriter().write(new JSONObject()
-                    .put("userId", optionalUser.get().getId())
-                    .put("role", optionalUser.get().getUserRole())
-                    .toString()
-            );
-            response.addHeader("Access-Control-Expose-Headers", "Authorization");
-            response.addHeader("Access-Control-Allow-Headers", "Authorization, X-PINGOTHER, Origin, " +
-                    "X-Requested-With, Content-Type, Accept, X-Custom-header");
-            response.addHeader(HEADER_STRING, TOKEN_PREFIX + jwt);
-        }
+    AuthenticationResponse authenticationResponse =  new AuthenticationResponse(optionalUser.get(), jwt);
+    return authenticationResponse;
     }
+
+
 
     @PostMapping("/sign-up")
     public ResponseEntity<?> signupUser(@RequestBody SignupDTO signupDTO){
