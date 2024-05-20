@@ -1,5 +1,6 @@
 package soren.rahimi.Capstone.Project.service.admin.category;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import soren.rahimi.Capstone.Project.dto.CategoryDTO;
@@ -13,6 +14,7 @@ import java.util.List;
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
+
 
     public Category createcategory(CategoryDTO categoryDTO){
         Category category = new Category();

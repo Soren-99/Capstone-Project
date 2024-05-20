@@ -22,6 +22,7 @@ public class AdminProductServiceImpl implements AdminProductService{
 
     private final CategoryRepository categoryRepository;
 
+    @Transactional
     public ProductDTO addProduct(ProductDTO productDTO) throws IOException {
         Product product = new Product();
         product.setName(productDTO.getName());
