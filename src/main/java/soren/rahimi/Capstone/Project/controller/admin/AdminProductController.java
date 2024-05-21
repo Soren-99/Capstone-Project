@@ -4,8 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import soren.rahimi.Capstone.Project.dto.FAQDTO;
 import soren.rahimi.Capstone.Project.dto.ProductDTO;
 import soren.rahimi.Capstone.Project.service.admin.adminproduct.AdminProductService;
+import soren.rahimi.Capstone.Project.service.admin.faq.FAQService;
 
 import java.io.IOException;
 import java.util.List;
@@ -16,6 +18,8 @@ import java.util.List;
 public class AdminProductController {
 
     private final AdminProductService adminProductService;
+
+    private final FAQService faqService;
 
 
     @PostMapping("/product")
@@ -43,6 +47,12 @@ public class AdminProductController {
                 return ResponseEntity.noContent().build();
             }
             return ResponseEntity.notFound().build();
+    }
+
+
+    @PostMapping("/faq/{productId}")
+    public ResponseEntity<FAQDTO> postFAQ(@PathVariable Long productId, @RequestBody FAQDTO faqDTO){
+        return ResponseEntity.status(HttpStatus.CREATED).body(faqService.postFAQ(productId, faqDTO));
     }
 
 }

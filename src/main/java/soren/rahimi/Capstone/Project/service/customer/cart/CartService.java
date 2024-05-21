@@ -5,6 +5,8 @@ import soren.rahimi.Capstone.Project.dto.AddProductInCartDTO;
 import soren.rahimi.Capstone.Project.dto.OrderDTO;
 import soren.rahimi.Capstone.Project.dto.PlaceOrderDTO;
 
+import java.util.List;
+
 public interface CartService {
 
     ResponseEntity<?> addProductToCart(AddProductInCartDTO addProductInCartDTO);
@@ -18,4 +20,6 @@ public interface CartService {
     OrderDTO decreaseProductQuantity(AddProductInCartDTO addProductInCartDTO);
 
     OrderDTO placeOrder(PlaceOrderDTO placeOrderDTO);
+
+    List<OrderDTO> getMyPlacedOrders(Long userId);
 }

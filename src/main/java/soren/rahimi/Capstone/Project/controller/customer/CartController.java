@@ -10,6 +10,8 @@ import soren.rahimi.Capstone.Project.dto.PlaceOrderDTO;
 import soren.rahimi.Capstone.Project.exceptions.ValidationException;
 import soren.rahimi.Capstone.Project.service.customer.cart.CartService;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/customer")
 @RequiredArgsConstructor
@@ -50,6 +52,12 @@ public class CartController {
     @PostMapping("/placeOrder")
     public ResponseEntity<OrderDTO> placeOrder(@RequestBody PlaceOrderDTO placeOrderDTO){
         return ResponseEntity.status(HttpStatus.CREATED).body(cartService.placeOrder(placeOrderDTO));
+    }
+
+
+    @GetMapping("/myOrders/{userId}")
+    public ResponseEntity<List<OrderDTO>> getMyPlacedOrders(@PathVariable Long userId){
+        return ResponseEntity.ok(cartService.getMyPlacedOrders(userId));
     }
 }
 
