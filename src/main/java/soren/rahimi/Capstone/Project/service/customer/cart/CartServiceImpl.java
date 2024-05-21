@@ -1,27 +1,22 @@
 package soren.rahimi.Capstone.Project.service.customer.cart;
 
 import jakarta.transaction.Transactional;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import soren.rahimi.Capstone.Project.dto.AddProductInCartDTO;
-import soren.rahimi.Capstone.Project.dto.AddToCartResponse;
-import soren.rahimi.Capstone.Project.dto.CartItemsDTO;
-import soren.rahimi.Capstone.Project.dto.OrderDTO;
-import soren.rahimi.Capstone.Project.entities.CartItems;
-import soren.rahimi.Capstone.Project.entities.Order;
-import soren.rahimi.Capstone.Project.entities.Product;
-import soren.rahimi.Capstone.Project.entities.User;
+import soren.rahimi.Capstone.Project.dto.*;
+import soren.rahimi.Capstone.Project.entities.*;
 import soren.rahimi.Capstone.Project.enums.OrderStatus;
-import soren.rahimi.Capstone.Project.repository.CartItemsRepository;
-import soren.rahimi.Capstone.Project.repository.OrderRepository;
-import soren.rahimi.Capstone.Project.repository.ProductRepository;
-import soren.rahimi.Capstone.Project.repository.UserRepository;
+import soren.rahimi.Capstone.Project.exceptions.ValidationException;
+import soren.rahimi.Capstone.Project.repository.*;
 
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +34,9 @@ public class CartServiceImpl implements CartService {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private CouponRepository couponRepository;
+
 
     @Transactional
     public ResponseEntity<?> addProductToCart(AddProductInCartDTO addProductInCartDTO){
@@ -49,7 +47,7 @@ public class CartServiceImpl implements CartService {
             activeOrder = new Order();
             activeOrder.setOrderStatus(OrderStatus.Pending);
             activeOrder.setUser(user);
-            activeOrder.setDate(LocalDate.now());
+            activeOrder.setDate(new Date());
             activeOrder.setOrderDescription("order");
             orderRepository.save(activeOrder);
         }
@@ -86,8 +84,6 @@ public class CartServiceImpl implements CartService {
         }
     }
 
-
-
     @Transactional
     public OrderDTO getCartByUserId(Long userId){
         Order activeOrder = orderRepository.findByUserIdAndOrderStatus(userId, OrderStatus.Pending);
@@ -99,7 +95,125 @@ public class CartServiceImpl implements CartService {
         orderDTO.setDiscount(activeOrder.getDiscount());
         orderDTO.setTotalAmount(activeOrder.getTotalAmount());
         orderDTO.setCartItems(cartItemsDTOList);
+        if(activeOrder.getCoupon() != null){
+            orderDTO.setCouponName(activeOrder.getCoupon().getName());
+        }
 
         return orderDTO;
+    }
+
+    public OrderDTO applyCoupon (Long userId, String code){
+        Order activeOrder = orderRepository.findByUserIdAndOrderStatus(userId, OrderStatus.Pending);
+        Coupon coupon = couponRepository.findByCode(code).orElseThrow(()-> new ValidationException("Coupon not found"));
+
+        if (couponIsExpired(coupon)){
+            throw new ValidationException("Coupon has expired.");
+        }
+
+        double discountAmount = ((coupon.getDiscount() / 100.0) * activeOrder.getTotalAmount());
+        double netAmount = activeOrder.getTotalAmount() - discountAmount;
+
+        activeOrder.setAmount((long)netAmount);
+        activeOrder.setDiscount((long)discountAmount);
+        activeOrder.setCoupon(coupon);
+
+        orderRepository.save(activeOrder);
+        return activeOrder.getOrderDTO();
+    }
+
+    private boolean couponIsExpired(Coupon coupon){
+        Date currentDate = new Date();
+        Date expirationDate = coupon.getExpirationDate();
+
+        return expirationDate != null && currentDate.after(expirationDate);
+    }
+
+    public OrderDTO increaseProductQuantity(AddProductInCartDTO addProductInCartDTO){
+        Order activeOrder = orderRepository.findByUserIdAndOrderStatus(addProductInCartDTO.getUserId(), OrderStatus.Pending);
+        Optional<Product> optionalProduct = productRepository.findById(addProductInCartDTO.getProductId());
+
+        Optional<CartItems> optionalCartItem = cartItemsRepository.findByProductIdAndOrderIdAndUserId(
+                addProductInCartDTO.getProductId(), activeOrder.getId(), addProductInCartDTO.getUserId()
+        );
+
+        if (optionalProduct.isPresent() && optionalCartItem.isPresent()){
+            CartItems cartItem = optionalCartItem.get();
+            Product product = optionalProduct.get();
+
+            activeOrder.setAmount(activeOrder.getAmount() + product.getPrice());
+            activeOrder.setTotalAmount(activeOrder.getTotalAmount() + product.getPrice());
+
+            cartItem.setQuantity(cartItem.getQuantity() + 1);
+
+            if(activeOrder.getCoupon() != null){
+                double discountAmount = ((activeOrder.getCoupon().getDiscount() / 100.0) * activeOrder.getTotalAmount());
+                double netAmount = activeOrder.getTotalAmount() - discountAmount;
+
+                activeOrder.setAmount((long)netAmount);
+                activeOrder.setDiscount((long)discountAmount);
+
+            }
+            cartItemsRepository.save(cartItem);
+            orderRepository.save(activeOrder);
+            return activeOrder.getOrderDTO();
+        }
+        return null;
+    }
+
+    public OrderDTO decreaseProductQuantity(AddProductInCartDTO addProductInCartDTO){
+        Order activeOrder = orderRepository.findByUserIdAndOrderStatus(addProductInCartDTO.getUserId(), OrderStatus.Pending);
+        Optional<Product> optionalProduct = productRepository.findById(addProductInCartDTO.getProductId());
+        Optional<CartItems> optionalCartItem = cartItemsRepository.findByProductIdAndOrderIdAndUserId(
+                addProductInCartDTO.getProductId(), activeOrder.getId(), addProductInCartDTO.getUserId()
+        );
+
+        if (optionalProduct.isPresent() && optionalCartItem.isPresent()){
+            CartItems cartItem = optionalCartItem.get();
+            Product product = optionalProduct.get();
+
+            activeOrder.setAmount(activeOrder.getAmount() - product.getPrice());
+            activeOrder.setTotalAmount(activeOrder.getTotalAmount() - product.getPrice());
+
+            cartItem.setQuantity(cartItem.getQuantity() - 1);
+
+            if(activeOrder.getCoupon() != null){
+                double discountAmount = ((activeOrder.getCoupon().getDiscount() / 100.0) * activeOrder.getTotalAmount());
+                double netAmount = activeOrder.getTotalAmount() - discountAmount;
+
+                activeOrder.setAmount((long)netAmount);
+                activeOrder.setDiscount((long)discountAmount);
+
+            }
+            cartItemsRepository.save(cartItem);
+            orderRepository.save(activeOrder);
+            return activeOrder.getOrderDTO();
+        }
+        return null;
+    }
+
+    @Transactional
+    public OrderDTO placeOrder(PlaceOrderDTO placeOrderDTO){
+        Order activeOrder = orderRepository.findByUserIdAndOrderStatus(placeOrderDTO.getUserId(), OrderStatus.Pending);
+        Optional<User> optionalUser = userRepository.findById(placeOrderDTO.getUserId());
+        if(optionalUser.isPresent()){
+            activeOrder.setOrderDescription(placeOrderDTO.getOrderDescription());
+            activeOrder.setAddress(placeOrderDTO.getAddress());
+            activeOrder.setDate(new Date());
+            activeOrder.setOrderStatus(OrderStatus.Placed);
+            activeOrder.setTrackingId(UUID.randomUUID());
+
+            orderRepository.save(activeOrder);
+
+            Order order = new Order();
+            order.setAmount(0L);
+            order.setTotalAmount(0L);
+            order.setDiscount(0L);
+            order.setUser(optionalUser.get());
+            order.setOrderStatus(OrderStatus.Pending);
+            orderRepository.save(order);
+
+            return activeOrder.getOrderDTO();
+        }
+        return null;
     }
 }

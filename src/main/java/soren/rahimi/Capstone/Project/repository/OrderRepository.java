@@ -6,9 +6,13 @@ import org.springframework.stereotype.Repository;
 import soren.rahimi.Capstone.Project.entities.Order;
 import soren.rahimi.Capstone.Project.enums.OrderStatus;
 
+import java.util.List;
+
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Order findByUserIdAndOrderStatus(Long userId, OrderStatus orderStatus);
+
+    List<Order> findAllByOrderStatusIn(List<OrderStatus> orderStatusList);
 
 }
