@@ -217,8 +217,19 @@ public class CartServiceImpl implements CartService {
         return null;
     }
 
+    @Transactional
     public List<OrderDTO> getMyPlacedOrders(Long userId){
         return orderRepository.findByUserIdAndOrderStatusIn(userId, List.of(OrderStatus.Placed, OrderStatus.Shipped,
                 OrderStatus.Delivered)).stream().map(Order::getOrderDTO).collect(Collectors.toList());
+    }
+
+
+    @Transactional
+    public OrderDTO searchOrderByTrackingId(UUID trackingId){
+        Optional<Order> optionalOrder = orderRepository.findByTrackingId(trackingId);
+        if(optionalOrder.isPresent()){
+            return optionalOrder.get().getOrderDTO();
+        }
+        return null;
     }
 }

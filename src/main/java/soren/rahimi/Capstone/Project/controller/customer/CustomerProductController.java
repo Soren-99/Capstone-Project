@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import soren.rahimi.Capstone.Project.dto.ProductDTO;
+import soren.rahimi.Capstone.Project.dto.ProductDetailDTO;
 import soren.rahimi.Capstone.Project.service.customer.CustomerProductService;
 
 import java.util.List;
@@ -30,4 +31,10 @@ public class CustomerProductController {
         return ResponseEntity.ok(productDTOS);
     }
 
+    @GetMapping("/product/{productId}")
+    public ResponseEntity<ProductDetailDTO> getProductDetailById(@PathVariable Long productId){
+        ProductDetailDTO productDetailDTO = customerProductService.getProductDetailById(productId);
+        if(productDetailDTO == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(productDetailDTO);
+    }
 }

@@ -6,6 +6,7 @@ import soren.rahimi.Capstone.Project.dto.OrderDTO;
 import soren.rahimi.Capstone.Project.dto.PlaceOrderDTO;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface CartService {
 
@@ -22,4 +23,6 @@ public interface CartService {
     OrderDTO placeOrder(PlaceOrderDTO placeOrderDTO);
 
     List<OrderDTO> getMyPlacedOrders(Long userId);
+
+    OrderDTO searchOrderByTrackingId(UUID trackingId);
 }
