@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import soren.rahimi.Capstone.Project.dto.AnalyticsResponse;
 import soren.rahimi.Capstone.Project.dto.OrderDTO;
 import soren.rahimi.Capstone.Project.service.admin.adminOrder.AdminOrderService;
 
@@ -31,4 +32,10 @@ public class AdminOrderController {
             return new ResponseEntity<>("Something went wrong!", HttpStatus.BAD_REQUEST);
         return ResponseEntity.status(HttpStatus.OK).body(orderDTO);
     }
+
+    @GetMapping("/order/analytics")
+    public ResponseEntity<AnalyticsResponse> getAnalytics(){
+        return ResponseEntity.ok(adminOrderService.calculateAnalytics());
+    }
+
 }
